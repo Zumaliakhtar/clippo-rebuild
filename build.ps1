@@ -25,20 +25,22 @@ if (-not (Test-Path ".venv")) { & python -m venv .venv }
 & .\.venv\Scripts\python -m pip install --quiet -r requirements.txt pyinstaller
 
 Write-Host "==> 3/5 Downloading ffmpeg (bundled, ~80 MB)..." -ForegroundColor Cyan
-$binDir = Join-Path $Dist "bin"
-New-Item -ItemType Directory -Force $binDir | Out-Null
-if (-not (Test-Path (Join-Path $binDir "ffmpeg.exe"))) {
+# NOTE: staging lives OUTSIDE dist/ because PyInstaller wipes dist\ClippoRebuild in step 4.
+$stageDir = Join-Path $Root "ffmpeg-stage"
+$stagedExe = Join-Path $stageDir "ffmpeg.exe"
+New-Item -ItemType Directory -Force $stageDir | Out-Null
+if (-not (Test-Path $stagedExe)) {
     Invoke-WebRequest -Uri $FfmpegUrl -OutFile $FfmpegZip
     $tmp = Join-Path $env:TEMP "ffext"
     if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
     Expand-Archive $FfmpegZip -DestinationPath $tmp
     $exe = Get-ChildItem -Path $tmp -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
-    Copy-Item $exe.FullName (Join-Path $binDir "ffmpeg.exe")
+    Copy-Item $exe.FullName $stagedExe
     Remove-Item $tmp -Recurse -Force
     Remove-Item $FfmpegZip -Force
-    Write-Host "    ffmpeg.exe bundled."
+    Write-Host "    ffmpeg.exe staged."
 } else {
-    Write-Host "    ffmpeg.exe already bundled, skipping download."
+    Write-Host "    ffmpeg.exe already staged, skipping download."
 }
 
 Write-Host "==> 4/5 Building ClippoRebuild.exe (PyInstaller)..." -ForegroundColor Cyan
@@ -51,7 +53,7 @@ $entry = Join-Path $Root "clippo\__main__.py"
     $entry | Out-Null
 
 Write-Host "==> 5/5 Copying ffmpeg next to the exe + README..." -ForegroundColor Cyan
-Copy-Item (Join-Path $binDir "ffmpeg.exe") (Join-Path $Dist "ffmpeg.exe") -Force
+Copy-Item $stagedExe (Join-Path $Dist "ffmpeg.exe") -Force
 @"
 Clippo Rebuild - portable folder
 ================================
