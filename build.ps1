@@ -44,7 +44,7 @@ if (-not (Test-Path $stagedExe)) {
 }
 
 Write-Host "==> 4/5 Building ClippoRebuild.exe (PyInstaller)..." -ForegroundColor Cyan
-$entry = Join-Path $Root "clippo\__main__.py"
+$entry = Join-Path $Root "clippo_launcher.py"
 & .\.venv\Scripts\pyinstaller --noconfirm --onedir --windowed `
     --name "ClippoRebuild" `
     --distpath (Join-Path $Root "dist") `
